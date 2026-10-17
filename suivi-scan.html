@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi Journalier des Scans</title>
+    <!-- Favicon SVG exact du scanner -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%232563EB' d='M134.6 47.9l-22.1 38.3 318.5 183.9c16.2 9.3 26.2 26.7 26.2 45.4v30.5H54.8c-30.2 0-54.8 24.6-54.8 54.8v45.2c0 36.3 29.5 66 66 66h380c36.5 0 66-29.5 66-66V315.5c0-32-17.1-61.7-44.8-77.7L134.6 47.9zM74.8 263.5h338.4v30H74.8v-30zm382.4 126.7c0 12.1-9.9 22-22 22H66c-12.1 0-22-9.9-22-22v-44.7c0-6 4.9-10.8 10.8-10.8h388.4c7.6 0 14 6.3 14 14v41.5z'/%3E%3Ccircle cx='90' cy='380' r='20' fill='%232563EB'/%3E%3C/svg%3E">
+    <style>
+        :root {
+            /* Palette principale */
+            --bg-page: #F0F7FF;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --text-light: #94A3B8;
+            --card-bg: #FFFFFF;
+            --border-subtle: #E2E8F0;
+
+            /* Couleurs clés */
+            --primary: #2563EB;
+            --primary-hover: #1D4ED8;
+            --primary-light: #EFF6FF;
+            --secondary-cyan: #06B6D4;
+            --total-card-bg: #1E3A8A;
+            --total-card-grad: linear-gradient(135deg, #1E3A8A 0%, #172554 100%);
+
+            /* 5 Catégories de scans */
+            --cat-convocations: #3B82F6;
+            --cat-convocations-bg: #EFF6FF;
+            --cat-notifications: #8B5CF6;
+            --cat-notifications-bg: #F5F3FF;
+            --cat-courrier: #14B8A6;
+            --cat-courrier-bg: #F0FDFA;
+            --cat-bnej: #F59E0B;
+            --cat-bnej-bg: #FFFBEB;
+            --cat-ancien: #EC4899;
+            --cat-ancien-bg: #FDF2F8;
+
+            /* Utilitaires */
+            --danger: #EF4444;
+            --danger-bg: #FEF2F2;
+            --success: #10B981;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --shadow-subtle: 0 1px 3px rgba(30, 41, 59, 0.05), 0 4px 12px rgba(37, 99, 235, 0.03);
+            --shadow-card: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+            --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* En-tête */
+        header {
+            background-color: #FFFFFF;
+            border-bottom: 1px solid var(--border-subtle);
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.04);
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-badge {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary-cyan) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+            flex-shrink: 0;
+            padding: 7px;
+        }
+
+        .logo-badge svg {
+            width: 100%;
+            height: 100%;
+            fill: #FFFFFF;
+        }
+
+        .logo-text h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .logo-text span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            display: block;
+        }
+
+        /* Navigation */
+        nav {
+            display: flex;
+            gap: 0.4rem;
+            background-color: var(--bg-page);
+            padding: 0.3rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+            overflow-x: auto;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.55rem 0.95rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            white-space: nowrap;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-btn:hover {
+            color: var(--primary);
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+
+        .nav-btn.active {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+        }
+
+        .nav-btn svg {
+            width: 17px;
+            height: 17px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        /* Conteneur principal */
+        main {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.75rem 1.5rem;
+        }
+
+        .section-view {
+            display: none;
+            animation: fadeIn 0.22s ease-out;
+        }
+
+        .section-view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cartes & Structures */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            box-shadow: var(--shadow-card);
+            margin-bottom: 1.5rem;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .card-header {
+            margin-bottom: 1.35rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 0.9rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            letter-spacing: -0.015em;
+        }
+
+        .card-title-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background-color: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-title-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--primary);
+            stroke-width: 2.2;
+            fill: none;
+        }
+
+        /* Sélecteur de date */
+        .date-selection {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+            background-color: #F8FAFC;
+            border: 1px solid var(--border-subtle);
+            padding: 1.1rem 1.25rem;
+            border-radius: var(--radius-md);
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .form-group label {
+            font-size: 0.825rem;
+            font-weight: 700;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        input[type="date"],
+        input[type="month"],
+        input[type="number"],
+        textarea,
+        select {
+            padding: 0.65rem 0.85rem;
+            border: 1px solid #CBD5E1;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            color: var(--text-main);
+            background-color: #FFFFFF;
+            transition: all 0.15s ease;
+        }
+
+        input[type="date"]:focus,
+        input[type="month"]:focus,
+        input[type="number"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .mode-indicator {
+            font-size: 0.8rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        .mode-new {
+            background-color: #E0F2FE;
+            color: #0369A1;
+            border: 1px solid #BAE6FD;
+        }
+
+        .mode-edit {
+            background-color: #FEF3C7;
+            color: #B45309;
+            border: 1px solid #FDE68A;
+        }
+
+        /* Grille des 5 catégories avec styles spécifiques */
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 1.1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .category-input-card {
+            background-color: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 1.15rem;
+            position: relative;
+            box-shadow: var(--shadow-subtle);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-top: 4px solid var(--primary);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .category-input-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.08);
+        }
+
+        /* Variantes pour les 5 catégories */
+        .category-input-card.cat-conv {
+            border-top-color: var(--cat-convocations);
+        }
+        .category-input-card.cat-notif {
+            border-top-color: var(--cat-notifications);
+        }
+        .category-input-card.cat-courr {
+            border-top-color: var(--cat-courrier);
+        }
+        .category-input-card.cat-bnej {
+            border-top-color: var(--cat-bnej);
+        }
+        .category-input-card.cat-anc {
+            border-top-color: var(--cat-ancien);
+        }
+
+        .category-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .category-icon-box {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .category-icon-box svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke-width: 2.2;
+        }
+
+        .cat-conv .category-icon-box { background: var(--cat-convocations-bg); color: var(--cat-convocations); stroke: var(--cat-convocations); }
+        .cat-notif .category-icon-box { background: var(--cat-notifications-bg); color: var(--cat-notifications); stroke: var(--cat-notifications); }
+        .cat-courr .category-icon-box { background: var(--cat-courrier-bg); color: var(--cat-courrier); stroke: var(--cat-courrier); }
+        .cat-bnej .category-icon-box { background: var(--cat-bnej-bg); color: var(--cat-bnej); stroke: var(--cat-bnej); }
+        .cat-anc .category-icon-box { background: var(--cat-ancien-bg); color: var(--cat-ancien); stroke: var(--cat-ancien); }
+
+        .category-input-card label {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: block;
+            line-height: 1.25;
+        }
+
+        .category-input-card input {
+            width: 100%;
+            font-size: 1.45rem;
+            font-weight: 700;
+            text-align: right;
+            color: var(--text-main);
+            background-color: #F8FAFC;
+            border: 1px solid #CBD5E1;
+            padding: 0.55rem 0.75rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .category-input-card input:focus {
+            background-color: #FFFFFF;
+        }
+
+        /* Grande Carte Total du Jour (Bleu foncé #1E3A8A) */
+        .daily-total-card {
+            background: var(--total-card-grad);
+            color: #FFFFFF;
+            border-radius: var(--radius-lg);
+            padding: 1.6rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.6rem;
+            box-shadow: 0 10px 25px -4px rgba(30, 58, 138, 0.35);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .daily-total-card::after {
+            content: '';
+            position: absolute;
+            right: -30px;
+            bottom: -30px;
+            width: 140px;
+            height: 140px;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.22) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .daily-total-info {
+            display: flex;
+            align-items: center;
+            gap: 1.1rem;
+        }
+
+        .daily-total-icon-badge {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #38BDF8;
+        }
+
+        .daily-total-icon-badge svg {
+            width: 26px;
+            height: 26px;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            fill: none;
+        }
+
+        .daily-total-label {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            letter-spacing: -0.01em;
+        }
+
+        .daily-total-sub {
+            font-size: 0.85rem;
+            color: #93C5FD;
+            font-weight: 400;
+            margin-top: 0.15rem;
+        }
+
+        .daily-total-value {
+            font-size: 2.75rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.03em;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Notes */
+        .notes-area {
+            margin-bottom: 1.6rem;
+        }
+
+        .notes-area textarea {
+            width: 100%;
+            min-height: 95px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        /* Boutons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem;
+            font-weight: 600;
+            font-size: 0.925rem;
+            padding: 0.7rem 1.4rem;
+            border-radius: var(--radius-md);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: #FFFFFF;
+            color: var(--text-main);
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-secondary:hover {
+            background-color: #F8FAFC;
+            border-color: #CBD5E1;
+            color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid #FECACA;
+        }
+
+        .btn-danger:hover {
+            background-color: #FEE2E2;
+            color: #B91C1C;
+            transform: translateY(-1px);
+        }
+
+        .btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            fill: none;
+        }
+
+        /* Tableau d'historique */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-subtle);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+            background-color: #FFFFFF;
+        }
+
+        thead {
+            background-color: #F8FAFC;
+            color: var(--text-main);
+            border-bottom: 2px solid var(--border-subtle);
+        }
+
+        th, td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+            vertical-align: middle;
+        }
+
+        th {
+            font-weight: 700;
+            white-space: nowrap;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr {
+            transition: background-color 0.15s ease;
+        }
+
+        tbody tr:hover {
+            background-color: #F0F7FF;
+        }
+
+        .num-col {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-weight: 500;
+        }
+
+        .total-col {
+            font-weight: 800;
+            color: var(--total-card-bg);
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .action-cell {
+            white-space: nowrap;
+            text-align: right;
+        }
+
+        .table-action-btn {
+            background: transparent;
+            border: none;
+            padding: 0.45rem;
+            cursor: pointer;
+            border-radius: 6px;
+            color: var(--text-muted);
+            margin-left: 0.25rem;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .table-action-btn:hover {
+            color: var(--primary);
+            background-color: var(--primary-light);
+        }
+
+        .table-action-btn.delete:hover {
+            color: var(--danger);
+            background-color: var(--danger-bg);
+        }
+
+        .table-action-btn svg {
+            width: 17px;
+            height: 17px;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            fill: none;
+        }
+
+        .empty-state {
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Statistiques */
+        .stats-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            background-color: #F8FAFC;
+            padding: 1.1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .stat-grid-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background-color: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 1.15rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: var(--shadow-subtle);
+            position: relative;
+            border-left: 4px solid var(--primary);
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card.highlight {
+            background: var(--total-card-grad);
+            color: #FFFFFF;
+            border: none;
+            box-shadow: 0 6px 18px rgba(30, 58, 138, 0.28);
+        }
+
+        .stat-card.highlight .stat-name {
+            color: #93C5FD;
+        }
+
+        .stat-card.highlight .stat-val {
+            color: #FFFFFF;
+        }
+
+        .stat-card.stat-conv { border-left-color: var(--cat-convocations); }
+        .stat-card.stat-notif { border-left-color: var(--cat-notifications); }
+        .stat-card.stat-courr { border-left-color: var(--cat-courrier); }
+        .stat-card.stat-bnej { border-left-color: var(--cat-bnej); }
+        .stat-card.stat-anc { border-left-color: var(--cat-ancien); }
+
+        .stat-name {
+            font-size: 0.775rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        .stat-val {
+            font-size: 1.85rem;
+            font-weight: 800;
+            margin-top: 0.4rem;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+        }
+
+        /* Barres de progression statistiques avec couleurs dédiées */
+        .chart-box {
+            margin-top: 1.5rem;
+            background-color: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 1.35rem;
+            box-shadow: var(--shadow-subtle);
+        }
+
+        .chart-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 1.15rem;
+        }
+
+        .bar-chart-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.85rem;
+            gap: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .bar-chart-label {
+            width: 150px;
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .bar-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .bar-chart-track {
+            flex: 1;
+            background-color: #F1F5F9;
+            height: 24px;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .bar-chart-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: #FFFFFF;
+            font-size: 0.75rem;
+            font-weight: 700;
+            min-width: 0;
+            transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 6px;
+        }
+
+        .bar-chart-num {
+            width: 60px;
+            text-align: right;
+            font-weight: 700;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Toast / Notification */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: var(--text-main);
+            color: #FFFFFF;
+            padding: 0.85rem 1.35rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.925rem;
+            font-weight: 500;
+            transform: translateY(120px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+        }
+
+        #toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        #toast.success { border-left: 4px solid var(--success); }
+        #toast.error { border-left: 4px solid var(--danger); }
+        #toast.info { border-left: 4px solid var(--secondary-cyan); }
+
+        /* Modal */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(3px);
+            z-index: 90;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-backdrop.active {
+            display: flex;
+        }
+
+        .modal-dialog {
+            background-color: #FFFFFF;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 480px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            animation: modalPop 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border-subtle);
+        }
+
+        @keyframes modalPop {
+            from { transform: scale(0.96); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            background-color: #F8FAFC;
+            border-bottom: 1px solid var(--border-subtle);
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-main);
+        }
+
+        .modal-body {
+            padding: 1.4rem 1.5rem;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.55;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            background-color: #F8FAFC;
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            nav {
+                justify-content: space-between;
+            }
+            .categories-grid {
+                grid-template-columns: 1fr;
+            }
+            .daily-total-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+            .daily-total-value {
+                font-size: 2.25rem;
+            }
+            .bar-chart-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.35rem;
+            }
+            .bar-chart-track {
+                width: 100%;
+            }
+            .bar-chart-label {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Entête de l'application -->
+    <header>
+        <div class="header-content">
+            <div class="logo-area">
+                <div class="logo-badge" title="Suivi des Scans">
+                    <!-- Reproduction vectorielle exacte du logo scanner fourni -->
+                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Capot supérieur incliné + jonction charnière -->
+                        <path d="M123.5 48.2L102 85.5l335 193.4c17.5 10.1 28.3 28.9 28.3 49.1v17.5H51.2C22.9 345.5 0 368.4 0 396.7v13.8c0 30.6 24.9 55.5 55.5 55.5h399c31.8 0 57.5-25.7 57.5-57.5V328c0-34.4-18.4-66.2-48.2-83.4L123.5 48.2zM468 410.5c0 7.5-6 13.5-13.5 13.5H55.5c-6.3 0-11.5-5.2-11.5-11.5v-13.8c0-4.2 3.4-7.7 7.7-7.7H468v19.5z"/>
+                        <!-- Vitre de numérisation horizontale -->
+                        <rect x="74" y="263" width="338" height="30" rx="3" ry="3"/>
+                        <!-- Voyant indicateur circulaire -->
+                        <circle cx="90" cy="390" r="20"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>Suivi des Scans</h1>
+                    <span>Gestion quotidienne des documents</span>
+                </div>
+            </div>
+            <nav>
+                <button class="nav-btn active" onclick="switchTab('dashboard')">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Saisie du Jour
+                </button>
+                <button class="nav-btn" onclick="switchTab('history')">
+                    <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Historique
+                </button>
+                <button class="nav-btn" onclick="switchTab('stats')">
+                    <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                    Statistiques
+                </button>
+                <button class="nav-btn" onclick="switchTab('settings')">
+                    <svg viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Paramètres
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Contenu Principal -->
+    <main>
+        <!-- ONGLET 1 : Saisie Journalière / Tableau de bord -->
+        <section id="tab-dashboard" class="section-view active">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <div class="card-title-icon">
+                            <svg viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        </div>
+                        Saisie des scans
+                    </h2>
+                    <span id="entry-mode-badge" class="mode-indicator mode-new">Nouvelle journée</span>
+                </div>
+
+                <div class="date-selection">
+                    <div class="form-group">
+                        <label for="input-date">Date de référence :</label>
+                        <input type="date" id="input-date" onchange="onDateChanged()">
+                    </div>
+                    <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: auto; padding-bottom: 0.35rem;">
+                        Sélectionnez une date pour consulter ou enregistrer les scans de ce jour précis.
+                    </div>
+                </div>
+
+                <div class="categories-grid">
+                    <!-- 1. Convocations (Bleu #3B82F6) -->
+                    <div class="category-input-card cat-conv">
+                        <div class="category-card-header">
+                            <div class="category-icon-box">
+                                <svg viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            </div>
+                            <label for="cat-convocations">1. Convocations</label>
+                        </div>
+                        <input type="number" id="cat-convocations" min="0" step="1" value="0" oninput="validateAndComputeTotal()">
+                    </div>
+
+                    <!-- 2. Notifications (Violet #8B5CF6) -->
+                    <div class="category-input-card cat-notif">
+                        <div class="category-card-header">
+                            <div class="category-icon-box">
+                                <svg viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                            </div>
+                            <label for="cat-notifications">2. Notifications</label>
+                        </div>
+                        <input type="number" id="cat-notifications" min="0" step="1" value="0" oninput="validateAndComputeTotal()">
+                    </div>
+
+                    <!-- 3. Courrier (Turquoise #14B8A6) -->
+                    <div class="category-input-card cat-courr">
+                        <div class="category-card-header">
+                            <div class="category-icon-box">
+                                <svg viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            </div>
+                            <label for="cat-courrier">3. Courrier</label>
+                        </div>
+                        <input type="number" id="cat-courrier" min="0" step="1" value="0" oninput="validateAndComputeTotal()">
+                    </div>
+
+                    <!-- 4. BNEJ (Orange #F59E0B) -->
+                    <div class="category-input-card cat-bnej">
+                        <div class="category-card-header">
+                            <div class="category-icon-box">
+                                <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <label for="cat-bnej">4. BNEJ</label>
+                        </div>
+                        <input type="number" id="cat-bnej" min="0" step="1" value="0" oninput="validateAndComputeTotal()">
+                    </div>
+
+                    <!-- 5. Courrier ancien (Rose #EC4899) -->
+                    <div class="category-input-card cat-anc">
+                        <div class="category-card-header">
+                            <div class="category-icon-box">
+                                <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                            <label for="cat-courrier-ancien">5. Courrier ancien</label>
+                        </div>
+                        <input type="number" id="cat-courrier-ancien" min="0" step="1" value="0" oninput="validateAndComputeTotal()">
+                    </div>
+                </div>
+
+                <!-- Grande Carte Total (Bleu foncé #1E3A8A) -->
+                <div class="daily-total-card">
+                    <div class="daily-total-info">
+                        <div class="daily-total-icon-badge">
+                            <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                        </div>
+                        <div>
+                            <div class="daily-total-label">Total des documents scannés</div>
+                            <div class="daily-total-sub">Calculé automatiquement à partir des cinq catégories</div>
+                        </div>
+                    </div>
+                    <div class="daily-total-value" id="daily-total-display">0</div>
+                </div>
+
+                <div class="notes-area">
+                    <div class="form-group">
+                        <label for="input-notes">Notes / Activités de la journée (facultatif) :</label>
+                        <textarea id="input-notes" placeholder="Indiquez ici les détails des lots scannés, observations ou tâches particulières..."></textarea>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.85rem; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="saveDay()">
+                        <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                        Enregistrer la journée
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetFormToDefaults()">
+                        Réinitialiser
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ONGLET 2 : Historique -->
+        <section id="tab-history" class="section-view">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <div class="card-title-icon">
+                            <svg viewBox="0 0 24 24"><path d="M3 10h18M3 14h18m-9-4v8m-7 4h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </div>
+                        Historique des journées enregistrées
+                    </h2>
+                </div>
+                <div class="table-responsive">
+                    <table id="history-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th class="num-col" style="color: var(--cat-convocations);">Convocations</th>
+                                <th class="num-col" style="color: var(--cat-notifications);">Notifications</th>
+                                <th class="num-col" style="color: var(--cat-courrier);">Courrier</th>
+                                <th class="num-col" style="color: var(--cat-bnej);">BNEJ</th>
+                                <th class="num-col" style="color: var(--cat-ancien);">Courrier ancien</th>
+                                <th class="total-col">Total</th>
+                                <th>Notes</th>
+                                <th class="action-cell">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-tbody">
+                            <!-- Généré en JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ONGLET 3 : Statistiques -->
+        <section id="tab-stats" class="section-view">
+            <!-- Vue mensuelle -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <div class="card-title-icon">
+                            <svg viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </div>
+                        Statistiques Mensuelles
+                    </h2>
+                </div>
+
+                <div class="stats-controls">
+                    <div class="form-group">
+                        <label for="stats-month-select">Mois à analyser :</label>
+                        <input type="month" id="stats-month-select" onchange="renderMonthlyStats()">
+                    </div>
+                </div>
+
+                <div class="stat-grid-summary">
+                    <div class="stat-card highlight">
+                        <div class="stat-name">Total du mois</div>
+                        <div class="stat-val" id="month-total-all">0</div>
+                    </div>
+                    <div class="stat-card stat-conv">
+                        <div class="stat-name">Convocations</div>
+                        <div class="stat-val" id="month-cat-1">0</div>
+                    </div>
+                    <div class="stat-card stat-notif">
+                        <div class="stat-name">Notifications</div>
+                        <div class="stat-val" id="month-cat-2">0</div>
+                    </div>
+                    <div class="stat-card stat-courr">
+                        <div class="stat-name">Courrier</div>
+                        <div class="stat-val" id="month-cat-3">0</div>
+                    </div>
+                    <div class="stat-card stat-bnej">
+                        <div class="stat-name">BNEJ</div>
+                        <div class="stat-val" id="month-cat-4">0</div>
+                    </div>
+                    <div class="stat-card stat-anc">
+                        <div class="stat-name">Courrier ancien</div>
+                        <div class="stat-val" id="month-cat-5">0</div>
+                    </div>
+                </div>
+
+                <div class="chart-box">
+                    <div class="chart-title">Répartition par catégorie pour le mois sélectionné</div>
+                    <div id="month-bars-container">
+                        <!-- Généré en JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtre par période personnalisée -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <div class="card-title-icon">
+                            <svg viewBox="0 0 24 24"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                        </div>
+                        Période personnalisée
+                    </h2>
+                </div>
+
+                <div class="stats-controls">
+                    <div class="form-group">
+                        <label for="period-start">Date de début :</label>
+                        <input type="date" id="period-start">
+                    </div>
+                    <div class="form-group">
+                        <label for="period-end">Date de fin :</label>
+                        <input type="date" id="period-end">
+                    </div>
+                    <button class="btn btn-secondary" onclick="renderPeriodStats()" style="margin-top: auto;">Calculer la période</button>
+                </div>
+
+                <div class="stat-grid-summary">
+                    <div class="stat-card highlight">
+                        <div class="stat-name">Total sur la période</div>
+                        <div class="stat-val" id="period-total-all">0</div>
+                    </div>
+                    <div class="stat-card stat-conv">
+                        <div class="stat-name">Convocations</div>
+                        <div class="stat-val" id="period-cat-1">0</div>
+                    </div>
+                    <div class="stat-card stat-notif">
+                        <div class="stat-name">Notifications</div>
+                        <div class="stat-val" id="period-cat-2">0</div>
+                    </div>
+                    <div class="stat-card stat-courr">
+                        <div class="stat-name">Courrier</div>
+                        <div class="stat-val" id="period-cat-3">0</div>
+                    </div>
+                    <div class="stat-card stat-bnej">
+                        <div class="stat-name">BNEJ</div>
+                        <div class="stat-val" id="period-cat-4">0</div>
+                    </div>
+                    <div class="stat-card stat-anc">
+                        <div class="stat-name">Courrier ancien</div>
+                        <div class="stat-val" id="period-cat-5">0</div>
+                    </div>
+                </div>
+
+                <div class="chart-box">
+                    <div class="chart-title">Répartition par catégorie sur la période</div>
+                    <div id="period-bars-container">
+                        <!-- Généré en JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ONGLET 4 : Paramètres & Sauvegarde -->
+        <section id="tab-settings" class="section-view">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <div class="card-title-icon">
+                            <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        </div>
+                        Exportation des données
+                    </h2>
+                </div>
+                <p style="margin-bottom: 1.25rem; color: var(--text-muted); font-size: 0.95rem;">
+                    Téléchargez l'intégralité de vos enregistrements pour conservation ou analyse dans un tableur.
+                </p>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="exportJSON()">
+                        <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Exporter en JSON (Sauvegarde intégrale)
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportCSV()">
+                        <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Exporter en CSV (Compatible Excel)
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <div class="card-title-icon">
+                            <svg viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        </div>
+                        Restauration & Importation
+                    </h2>
+                </div>
+                <p style="margin-bottom: 1.25rem; color: var(--text-muted); font-size: 0.95rem;">
+                    Restaurez vos données à partir d'un fichier JSON préalablement exporté. Une validation préalable est effectuée.
+                </p>
+                <div class="form-group" style="max-width: 420px; margin-bottom: 1rem;">
+                    <input type="file" id="import-file-input" accept=".json" onchange="handleFileSelected(event)">
+                </div>
+            </div>
+
+            <div class="card" style="border-color: #FECACA;">
+                <div class="card-header">
+                    <h2 class="card-title" style="color: var(--danger);">
+                        <div class="card-title-icon" style="background-color: var(--danger-bg);">
+                            <svg viewBox="0 0 24 24" style="stroke: var(--danger);"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </div>
+                        Zone de précaution
+                    </h2>
+                </div>
+                <p style="margin-bottom: 1.25rem; color: var(--text-muted); font-size: 0.95rem;">
+                    Cette action supprime toutes les entrées enregistrées dans ce navigateur. Assurez-vous d'avoir fait un export si vous souhaitez les conserver.
+                </p>
+                <button class="btn btn-danger" onclick="confirmResetAll()">
+                    Purger toutes les données
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal générique de confirmation / action -->
+    <div id="modal-container" class="modal-backdrop">
+        <div class="modal-dialog">
+            <div class="modal-header" id="modal-title">Confirmation</div>
+            <div class="modal-body" id="modal-body">Message</div>
+            <div class="modal-footer" id="modal-footer">
+                <!-- Boutons injectés dynamiquement -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast">Opération réussie</div>
+
+    <script>
+        /**
+         * Clé de stockage unique dans le LocalStorage (strictement inchangée)
+         */
+        const STORAGE_KEY = 'suivi_scan_data';
+
+        /**
+         * Structure des 5 catégories avec leurs couleurs dédiées
+         */
+        const CATEGORIES = [
+            { id: 'convocations', label: 'Convocations', color: '#3B82F6' },
+            { id: 'notifications', label: 'Notifications', color: '#8B5CF6' },
+            { id: 'courrier', label: 'Courrier', color: '#14B8A6' },
+            { id: 'bnej', label: 'BNEJ', color: '#F59E0B' },
+            { id: 'courrierAncien', label: 'Courrier ancien', color: '#EC4899' }
+        ];
+
+        /**
+         * Récupère la base de données depuis LocalStorage
+         */
+        function getScanData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                return raw ? JSON.parse(raw) : {};
+            } catch (e) {
+                console.error("Erreur de lecture du LocalStorage", e);
+                return {};
+            }
+        }
+
+        /**
+         * Enregistre l'objet global dans LocalStorage
+         */
+        function saveScanData(data) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            } catch (e) {
+                showToast("Erreur lors de l'enregistrement dans le navigateur.", "error");
+            }
+        }
+
+        /**
+         * Formatage de la date en ISO (YYYY-MM-DD)
+         */
+        function getTodayISO() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        /**
+         * Format d'affichage français pour les dates
+         */
+        function formatDateFR(isoDateStr) {
+            if (!isoDateStr) return '';
+            const parts = isoDateStr.split('-');
+            if (parts.length !== 3) return isoDateStr;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        /**
+         * Nettoie et valide un nombre saisi (entier >= 0)
+         */
+        function sanitizeNumberInput(value) {
+            let n = parseInt(value, 10);
+            if (isNaN(n) || n < 0) {
+                return 0;
+            }
+            return n;
+        }
+
+        /**
+         * Navigation par onglets
+         */
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.section-view').forEach(sec => sec.classList.remove('active'));
+
+            const targetSection = document.getElementById('tab-' + tabId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+
+            const btnIndex = ['dashboard', 'history', 'stats', 'settings'].indexOf(tabId);
+            if (btnIndex >= 0) {
+                const buttons = document.querySelectorAll('nav .nav-btn');
+                if (buttons[btnIndex]) buttons[btnIndex].classList.add('active');
+            }
+
+            if (tabId === 'history') {
+                renderHistory();
+            } else if (tabId === 'stats') {
+                initStatsDates();
+                renderMonthlyStats();
+                renderPeriodStats();
+            }
+        }
+
+        /**
+         * Initialisation du formulaire de saisie
+         */
+        function initDashboard() {
+            const dateInput = document.getElementById('input-date');
+            dateInput.value = getTodayISO();
+            loadDayData(dateInput.value);
+        }
+
+        /**
+         * Changement de date dans la vue de saisie
+         */
+        function onDateChanged() {
+            const dateVal = document.getElementById('input-date').value;
+            if (!dateVal) return;
+            loadDayData(dateVal);
+        }
+
+        /**
+         * Charge les données d'une date spécifique dans le formulaire
+         */
+        function loadDayData(dateStr) {
+            const allData = getScanData();
+            const dayRecord = allData[dateStr];
+            const badge = document.getElementById('entry-mode-badge');
+
+            if (dayRecord) {
+                document.getElementById('cat-convocations').value = dayRecord.convocations || 0;
+                document.getElementById('cat-notifications').value = dayRecord.notifications || 0;
+                document.getElementById('cat-courrier').value = dayRecord.courrier || 0;
+                document.getElementById('cat-bnej').value = dayRecord.bnej || 0;
+                document.getElementById('cat-courrier-ancien').value = dayRecord.courrierAncien || 0;
+                document.getElementById('input-notes').value = dayRecord.notes || '';
+
+                badge.textContent = 'Modification de la journée enregistrée';
+                badge.className = 'mode-indicator mode-edit';
+            } else {
+                document.getElementById('cat-convocations').value = 0;
+                document.getElementById('cat-notifications').value = 0;
+                document.getElementById('cat-courrier').value = 0;
+                document.getElementById('cat-bnej').value = 0;
+                document.getElementById('cat-courrier-ancien').value = 0;
+                document.getElementById('input-notes').value = '';
+
+                badge.textContent = 'Nouvelle journée';
+                badge.className = 'mode-indicator mode-new';
+            }
+            validateAndComputeTotal();
+        }
+
+        /**
+         * Vérification des champs et calcul du total dynamique
+         */
+        function validateAndComputeTotal() {
+            const conv = sanitizeNumberInput(document.getElementById('cat-convocations').value);
+            const notif = sanitizeNumberInput(document.getElementById('cat-notifications').value);
+            const courr = sanitizeNumberInput(document.getElementById('cat-courrier').value);
+            const bnej = sanitizeNumberInput(document.getElementById('cat-bnej').value);
+            const anc = sanitizeNumberInput(document.getElementById('cat-courrier-ancien').value);
+
+            document.getElementById('cat-convocations').value = conv;
+            document.getElementById('cat-notifications').value = notif;
+            document.getElementById('cat-courrier').value = courr;
+            document.getElementById('cat-bnej').value = bnej;
+            document.getElementById('cat-courrier-ancien').value = anc;
+
+            const total = conv + notif + courr + bnej + anc;
+            document.getElementById('daily-total-display').textContent = total.toLocaleString('fr-FR');
+            return total;
+        }
+
+        /**
+         * Enregistre la journée dans LocalStorage
+         */
+        function saveDay() {
+            const dateVal = document.getElementById('input-date').value;
+            if (!dateVal) {
+                showToast("Veuillez sélectionner une date valide.", "error");
+                return;
+            }
+
+            const conv = sanitizeNumberInput(document.getElementById('cat-convocations').value);
+            const notif = sanitizeNumberInput(document.getElementById('cat-notifications').value);
+            const courr = sanitizeNumberInput(document.getElementById('cat-courrier').value);
+            const bnej = sanitizeNumberInput(document.getElementById('cat-bnej').value);
+            const anc = sanitizeNumberInput(document.getElementById('cat-courrier-ancien').value);
+            const total = conv + notif + courr + bnej + anc;
+            const notes = document.getElementById('input-notes').value.trim();
+
+            const allData = getScanData();
+            allData[dateVal] = {
+                convocations: conv,
+                notifications: notif,
+                courrier: courr,
+                bnej: bnej,
+                courrierAncien: anc,
+                total: total,
+                notes: notes,
+                updatedAt: new Date().toISOString()
+            };
+
+            saveScanData(allData);
+            loadDayData(dateVal);
+            showToast("Journée du " + formatDateFR(dateVal) + " enregistrée avec succès.", "success");
+        }
+
+        /**
+         * Réinitialise le formulaire de saisie du jour affiché
+         */
+        function resetFormToDefaults() {
+            document.getElementById('cat-convocations').value = 0;
+            document.getElementById('cat-notifications').value = 0;
+            document.getElementById('cat-courrier').value = 0;
+            document.getElementById('cat-bnej').value = 0;
+            document.getElementById('cat-courrier-ancien').value = 0;
+            document.getElementById('input-notes').value = '';
+            validateAndComputeTotal();
+        }
+
+        /**
+         * Rendu de la vue Historique
+         */
+        function renderHistory() {
+            const allData = getScanData();
+            const tbody = document.getElementById('history-tbody');
+            tbody.innerHTML = '';
+
+            const dates = Object.keys(allData).sort((a, b) => b.localeCompare(a));
+
+            if (dates.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="empty-state">Aucun jour enregistré pour le moment. Remplissez et validez le formulaire de saisie pour commencer.</td></tr>`;
+                return;
+            }
+
+            dates.forEach(dateStr => {
+                const item = allData[dateStr];
+                const tr = document.createElement('tr');
+
+                const safeNotes = item.notes ? escapeHtml(item.notes) : '<span style="color:var(--text-light);font-style:italic;">Aucune note</span>';
+
+                tr.innerHTML = `
+                    <td style="font-weight:700; white-space:nowrap; color:var(--text-main);">${formatDateFR(dateStr)}</td>
+                    <td class="num-col" style="font-weight:600; color:#2563EB;">${(item.convocations || 0).toLocaleString('fr-FR')}</td>
+                    <td class="num-col" style="font-weight:600; color:#7C3AED;">${(item.notifications || 0).toLocaleString('fr-FR')}</td>
+                    <td class="num-col" style="font-weight:600; color:#0D9488;">${(item.courrier || 0).toLocaleString('fr-FR')}</td>
+                    <td class="num-col" style="font-weight:600; color:#D97706;">${(item.bnej || 0).toLocaleString('fr-FR')}</td>
+                    <td class="num-col" style="font-weight:600; color:#DB2777;">${(item.courrierAncien || 0).toLocaleString('fr-FR')}</td>
+                    <td class="total-col">${(item.total || 0).toLocaleString('fr-FR')}</td>
+                    <td style="max-width: 250px; font-size: 0.85rem; line-height: 1.35; color: var(--text-muted);">${safeNotes}</td>
+                    <td class="action-cell">
+                        <button class="table-action-btn" title="Modifier cette journée" onclick="editDay('${dateStr}')">
+                            <svg viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        </button>
+                        <button class="table-action-btn delete" title="Supprimer cette journée" onclick="promptDeleteDay('${dateStr}')">
+                            <svg viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        /**
+         * Redirige l'utilisateur vers la modification d'un jour depuis l'historique
+         */
+        function editDay(dateStr) {
+            document.getElementById('input-date').value = dateStr;
+            loadDayData(dateStr);
+            switchTab('dashboard');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /**
+         * Demande confirmation avant de supprimer un jour
+         */
+        function promptDeleteDay(dateStr) {
+            showModal({
+                title: 'Confirmer la suppression',
+                body: `Voulez-vous vraiment supprimer définitivement l'enregistrement de la journée du <strong>${formatDateFR(dateStr)}</strong> ?`,
+                buttons: [
+                    {
+                        text: 'Annuler',
+                        class: 'btn-secondary',
+                        action: closeModal
+                    },
+                    {
+                        text: 'Supprimer',
+                        class: 'btn-danger',
+                        action: () => {
+                            const data = getScanData();
+                            delete data[dateStr];
+                            saveScanData(data);
+                            closeModal();
+                            renderHistory();
+                            if (document.getElementById('input-date').value === dateStr) {
+                                loadDayData(dateStr);
+                            }
+                            showToast("Journée supprimée.", "info");
+                        }
+                    }
+                ]
+            });
+        }
+
+        /**
+         * Initialisation des dates par défaut pour la section Statistiques
+         */
+        function initStatsDates() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+
+            if (!document.getElementById('stats-month-select').value) {
+                document.getElementById('stats-month-select').value = `${year}-${month}`;
+            }
+
+            if (!document.getElementById('period-start').value) {
+                document.getElementById('period-start').value = `${year}-${month}-01`;
+            }
+            if (!document.getElementById('period-end').value) {
+                document.getElementById('period-end').value = getTodayISO();
+            }
+        }
+
+        /**
+         * Calcul et rendu des statistiques mensuelles
+         */
+        function renderMonthlyStats() {
+            const monthVal = document.getElementById('stats-month-select').value;
+            if (!monthVal) return;
+
+            const allData = getScanData();
+            let sumTotal = 0;
+            let sumCats = {
+                convocations: 0,
+                notifications: 0,
+                courrier: 0,
+                bnej: 0,
+                courrierAncien: 0
+            };
+
+            Object.keys(allData).forEach(dateStr => {
+                if (dateStr.startsWith(monthVal)) {
+                    const row = allData[dateStr];
+                    sumCats.convocations += (row.convocations || 0);
+                    sumCats.notifications += (row.notifications || 0);
+                    sumCats.courrier += (row.courrier || 0);
+                    sumCats.bnej += (row.bnej || 0);
+                    sumCats.courrierAncien += (row.courrierAncien || 0);
+                    sumTotal += (row.total || 0);
+                }
+            });
+
+            document.getElementById('month-total-all').textContent = sumTotal.toLocaleString('fr-FR');
+            document.getElementById('month-cat-1').textContent = sumCats.convocations.toLocaleString('fr-FR');
+            document.getElementById('month-cat-2').textContent = sumCats.notifications.toLocaleString('fr-FR');
+            document.getElementById('month-cat-3').textContent = sumCats.courrier.toLocaleString('fr-FR');
+            document.getElementById('month-cat-4').textContent = sumCats.bnej.toLocaleString('fr-FR');
+            document.getElementById('month-cat-5').textContent = sumCats.courrierAncien.toLocaleString('fr-FR');
+
+            renderBarChart('month-bars-container', sumCats, sumTotal);
+        }
+
+        /**
+         * Calcul et rendu des statistiques sur une période personnalisée
+         */
+        function renderPeriodStats() {
+            const startVal = document.getElementById('period-start').value;
+            const endVal = document.getElementById('period-end').value;
+
+            if (!startVal || !endVal) {
+                showToast("Veuillez renseigner les dates de début et de fin.", "error");
+                return;
+            }
+
+            if (startVal > endVal) {
+                showToast("La date de début doit être antérieure à la date de fin.", "error");
+                return;
+            }
+
+            const allData = getScanData();
+            let sumTotal = 0;
+            let sumCats = {
+                convocations: 0,
+                notifications: 0,
+                courrier: 0,
+                bnej: 0,
+                courrierAncien: 0
+            };
+
+            Object.keys(allData).forEach(dateStr => {
+                if (dateStr >= startVal && dateStr <= endVal) {
+                    const row = allData[dateStr];
+                    sumCats.convocations += (row.convocations || 0);
+                    sumCats.notifications += (row.notifications || 0);
+                    sumCats.courrier += (row.courrier || 0);
+                    sumCats.bnej += (row.bnej || 0);
+                    sumCats.courrierAncien += (row.courrierAncien || 0);
+                    sumTotal += (row.total || 0);
+                }
+            });
+
+            document.getElementById('period-total-all').textContent = sumTotal.toLocaleString('fr-FR');
+            document.getElementById('period-cat-1').textContent = sumCats.convocations.toLocaleString('fr-FR');
+            document.getElementById('period-cat-2').textContent = sumCats.notifications.toLocaleString('fr-FR');
+            document.getElementById('period-cat-3').textContent = sumCats.courrier.toLocaleString('fr-FR');
+            document.getElementById('period-cat-4').textContent = sumCats.bnej.toLocaleString('fr-FR');
+            document.getElementById('period-cat-5').textContent = sumCats.courrierAncien.toLocaleString('fr-FR');
+
+            renderBarChart('period-bars-container', sumCats, sumTotal);
+        }
+
+        /**
+         * Génère un graphique en barres avec la couleur assignée à chaque catégorie
+         */
+        function renderBarChart(containerId, catValues, grandTotal) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            if (grandTotal === 0) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-light); padding: 1.25rem; font-size: 0.9rem;">Aucun document scanné sur cette période.</div>`;
+                return;
+            }
+
+            const maxVal = Math.max(
+                catValues.convocations,
+                catValues.notifications,
+                catValues.courrier,
+                catValues.bnej,
+                catValues.courrierAncien,
+                1
+            );
+
+            CATEGORIES.forEach(cat => {
+                const val = catValues[cat.id] || 0;
+                const percentage = Math.round((val / maxVal) * 100);
+
+                const row = document.createElement('div');
+                row.className = 'bar-chart-row';
+                row.innerHTML = `
+                    <div class="bar-chart-label" title="${cat.label}">
+                        <span class="bar-dot" style="background-color: ${cat.color};"></span>
+                        ${cat.label}
+                    </div>
+                    <div class="bar-chart-track">
+                        <div class="bar-chart-fill" style="width: ${percentage}%; background-color: ${cat.color};">
+                            ${percentage > 18 ? val.toLocaleString('fr-FR') : ''}
+                        </div>
+                    </div>
+                    <div class="bar-chart-num">${val.toLocaleString('fr-FR')}</div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        /**
+         * Exportation intégrale au format JSON
+         */
+        function exportJSON() {
+            const data = getScanData();
+            const keysCount = Object.keys(data).length;
+            if (keysCount === 0) {
+                showToast("Aucune donnée à exporter.", "info");
+                return;
+            }
+
+            const exportPayload = {
+                application: "SuiviJournalierDesScans",
+                exportDate: new Date().toISOString(),
+                version: "1.0",
+                data: data
+            };
+
+            const jsonStr = JSON.stringify(exportPayload, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sauvegarde-scans-${getTodayISO()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("Export JSON téléchargé avec succès.", "success");
+        }
+
+        /**
+         * Exportation au format CSV compatible Excel
+         */
+        function exportCSV() {
+            const data = getScanData();
+            const dates = Object.keys(data).sort();
+            if (dates.length === 0) {
+                showToast("Aucune donnée à exporter.", "info");
+                return;
+            }
+
+            let csvContent = "\uFEFF"; // Byte Order Mark (BOM) UTF-8 pour Excel
+            csvContent += "Date;Convocations;Notifications;Courrier;BNEJ;Courrier ancien;Total;Notes\n";
+
+            dates.forEach(d => {
+                const item = data[d];
+                let cleanNotes = (item.notes || "").replace(/"/g, '""').replace(/(\r\n|\n|\r)/gm, " ");
+                const row = [
+                    d,
+                    item.convocations || 0,
+                    item.notifications || 0,
+                    item.courrier || 0,
+                    item.bnej || 0,
+                    item.courrierAncien || 0,
+                    item.total || 0,
+                    `"${cleanNotes}"`
+                ];
+                csvContent += row.join(";") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `scans-journaliers-${getTodayISO()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("Export CSV téléchargé avec succès.", "success");
+        }
+
+        /**
+         * Traitement du fichier JSON importé
+         */
+        let pendingImportData = null;
+
+        function handleFileSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    let importedDataObj = null;
+
+                    if (parsed && parsed.data && typeof parsed.data === 'object') {
+                        importedDataObj = parsed.data;
+                    } else if (parsed && typeof parsed === 'object') {
+                        importedDataObj = parsed;
+                    }
+
+                    if (!importedDataObj || Object.keys(importedDataObj).length === 0) {
+                        showToast("Le fichier ne contient aucun enregistrement valide.", "error");
+                        event.target.value = '';
+                        return;
+                    }
+
+                    let isValid = true;
+                    for (const dateKey of Object.keys(importedDataObj)) {
+                        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+                            isValid = false;
+                            break;
+                        }
+                    }
+
+                    if (!isValid) {
+                        showToast("Format de fichier non reconnu. Vérifiez le format JSON exporté.", "error");
+                        event.target.value = '';
+                        return;
+                    }
+
+                    pendingImportData = importedDataObj;
+                    const count = Object.keys(importedDataObj).length;
+
+                    showModal({
+                        title: 'Restaurer les données',
+                        body: `Le fichier contient <strong>${count} journée(s)</strong> de données.<br><br>Choisissez l'opération à effectuer :
+                               <br>• <strong>Fusionner :</strong> ajoute les nouvelles dates et met à jour celles existantes.
+                               <br>• <strong>Remplacer tout :</strong> efface l'existant pour ne garder que ce fichier.`,
+                        buttons: [
+                            {
+                                text: 'Annuler',
+                                class: 'btn-secondary',
+                                action: () => {
+                                    closeModal();
+                                    event.target.value = '';
+                                }
+                            },
+                            {
+                                text: 'Fusionner',
+                                class: 'btn-primary',
+                                action: () => {
+                                    applyImport('merge');
+                                    event.target.value = '';
+                                }
+                            },
+                            {
+                                text: 'Remplacer tout',
+                                class: 'btn-danger',
+                                action: () => {
+                                    applyImport('replace');
+                                    event.target.value = '';
+                                }
+                            }
+                        ]
+                    });
+
+                } catch (err) {
+                    showToast("Erreur lors de la lecture du fichier JSON.", "error");
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        /**
+         * Application de l'import (Remplacement ou Fusion)
+         */
+        function applyImport(mode) {
+            if (!pendingImportData) return;
+
+            let finalData = {};
+            if (mode === 'merge') {
+                finalData = Object.assign({}, getScanData(), pendingImportData);
+            } else {
+                finalData = Object.assign({}, pendingImportData);
+            }
+
+            for (const d of Object.keys(finalData)) {
+                const item = finalData[d];
+                item.convocations = sanitizeNumberInput(item.convocations);
+                item.notifications = sanitizeNumberInput(item.notifications);
+                item.courrier = sanitizeNumberInput(item.courrier);
+                item.bnej = sanitizeNumberInput(item.bnej);
+                item.courrierAncien = sanitizeNumberInput(item.courrierAncien);
+                item.total = item.convocations + item.notifications + item.courrier + item.bnej + item.courrierAncien;
+                item.notes = (item.notes || '').toString();
+            }
+
+            saveScanData(finalData);
+            closeModal();
+            loadDayData(document.getElementById('input-date').value);
+            renderHistory();
+            showToast("Importation réussie.", "success");
+            pendingImportData = null;
+        }
+
+        /**
+         * Confirmation de purge totale
+         */
+        function confirmResetAll() {
+            showModal({
+                title: 'Purger toutes les données',
+                body: 'Êtes-vous certain de vouloir vider l\'ensemble de vos enregistrements ? Cette action est irréversible si vous n\'avez pas d\'export JSON.',
+                buttons: [
+                    {
+                        text: 'Annuler',
+                        class: 'btn-secondary',
+                        action: closeModal
+                    },
+                    {
+                        text: 'Oui, tout effacer',
+                        class: 'btn-danger',
+                        action: () => {
+                            localStorage.removeItem(STORAGE_KEY);
+                            closeModal();
+                            loadDayData(document.getElementById('input-date').value);
+                            renderHistory();
+                            showToast("Toutes les données ont été réinitialisées.", "info");
+                        }
+                    }
+                ]
+            });
+        }
+
+        /**
+         * Boîte modale personnalisée
+         */
+        function showModal(config) {
+            const modal = document.getElementById('modal-container');
+            const titleEl = document.getElementById('modal-title');
+            const bodyEl = document.getElementById('modal-body');
+            const footerEl = document.getElementById('modal-footer');
+
+            titleEl.textContent = config.title || 'Confirmation';
+            bodyEl.innerHTML = config.body || '';
+            footerEl.innerHTML = '';
+
+            (config.buttons || []).forEach(btnConf => {
+                const btn = document.createElement('button');
+                btn.className = `btn ${btnConf.class || 'btn-secondary'}`;
+                btn.textContent = btnConf.text || 'Action';
+                btn.onclick = btnConf.action;
+                footerEl.appendChild(btn);
+            });
+
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-container').classList.remove('active');
+        }
+
+        /**
+         * Notification toast non intrusive
+         */
+        let toastTimeout = null;
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `show ${type}`;
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.className = '';
+            }, 3500);
+        }
+
+        /**
+         * Échappement HTML sécurisé
+         */
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        /**
+         * Lancement de l'application
+         */
+        window.onload = function() {
+            initDashboard();
+        };
+    </script>
+</body>
+</html>
